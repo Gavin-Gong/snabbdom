@@ -16,10 +16,19 @@ type VNodeQueue = VNode[]
 
 const emptyNode = vnode('', {}, [], undefined, undefined)
 
+/**
+ * @desc 根据 key，sel（tagName, class, id） 来判断是否为同一个 vnode
+ * @param vnode1 
+ * @param vnode2 
+ */
 function sameVnode (vnode1: VNode, vnode2: VNode): boolean {
   return vnode1.key === vnode2.key && vnode1.sel === vnode2.sel
 }
 
+/**
+ * is vnode
+ * @param vnode 
+ */
 function isVnode (vnode: any): vnode is VNode {
   return vnode.sel !== undefined
 }
@@ -45,6 +54,11 @@ function createKeyToOldIdx (children: VNode[], beginIdx: number, endIdx: number)
 
 const hooks: Array<keyof Module> = ['create', 'update', 'remove', 'destroy', 'pre', 'post']
 
+/**
+ * @desc 返回 patch 函数，patch 来对比和更新 DOM
+ * @param modules 接收 snabddom 模块
+ * @param domApi 默认为 浏览器 DOM API
+ */
 export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
   let i: number
   let j: number
@@ -59,6 +73,8 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   const api: DOMAPI = domApi !== undefined ? domApi : htmlDomApi
 
+  // 存储所有模块的的 hooks fn，留待之后调用
+  // -> cbs = { create: [fn1, fn2, ...], post: [...] }
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
@@ -69,12 +85,21 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
   }
 
+  /**
+   * @desc 根据真实 DOM 节点生成 children 为空的 vnode
+   * @param elm 
+   */
   function emptyNodeAt (elm: Element) {
     const id = elm.id ? '#' + elm.id : ''
     const c = elm.className ? '.' + elm.className.split(' ').join('.') : ''
     return vnode(api.tagName(elm).toLowerCase() + id + c, {}, [], undefined, elm)
   }
 
+  /**
+   * @desc TODO: 没看懂
+   * @param childElm 
+   * @param listeners 
+   */
   function createRmCb (childElm: Node, listeners: number) {
     return function rmCb () {
       if (--listeners === 0) {
@@ -84,10 +109,16 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
   }
 
+  /**
+   * @desc 根据 vnode 对象生成 DOM 节点，并且会更新到 vnode.elm
+   * @param vnode 
+   * @param insertedVnodeQueue 
+   */
   function createElm (vnode: VNode, insertedVnodeQueue: VNodeQueue): Node {
     let i: any
     let data = vnode.data
     if (data !== undefined) {
+      // run init hooks
       const init = data.hook?.init
       if (isDef(init)) {
         init(vnode)
@@ -97,11 +128,13 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     const children = vnode.children
     const sel = vnode.sel
     if (sel === '!') {
+      // comment vnode
       if (isUndef(vnode.text)) {
         vnode.text = ''
       }
       vnode.elm = api.createComment(vnode.text!)
     } else if (sel !== undefined) {
+      // nornaml vnode
       // Parse selector
       const hashIdx = sel.indexOf('#')
       const dotIdx = sel.indexOf('.', hashIdx)
@@ -109,12 +142,19 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
       const dot = dotIdx > 0 ? dotIdx : sel.length
       const tag = hashIdx !== -1 || dotIdx !== -1 ? sel.slice(0, Math.min(hash, dot)) : sel
       const elm = vnode.elm = isDef(data) && isDef(i = data.ns)
-        ? api.createElementNS(i, tag)
-        : api.createElement(tag)
+        ? api.createElementNS(i, tag) // SVG DOM
+        : api.createElement(tag) // normal DOM
+
+      // set class & id to DOM
       if (hash < dot) elm.setAttribute('id', sel.slice(hash + 1, dot))
       if (dotIdx > 0) elm.setAttribute('class', sel.slice(dot + 1).replace(/\./g, ' '))
+      // run create hooks
       for (i = 0; i < cbs.create.length; ++i) cbs.create[i](emptyNode, vnode)
+
+      // handle children
+      // text children 互斥，所以只要考虑这两种情况
       if (is.array(children)) {
+        // create child & append to elm
         for (i = 0; i < children.length; ++i) {
           const ch = children[i]
           if (ch != null) {
@@ -122,6 +162,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
           }
         }
       } else if (is.primitive(vnode.text)) {
+        // when children is string
         api.appendChild(elm, api.createTextNode(vnode.text))
       }
       const hook = vnode.data!.hook
@@ -132,11 +173,21 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         }
       }
     } else {
+      // text vnode
       vnode.elm = api.createTextNode(vnode.text!)
     }
     return vnode.elm
   }
 
+  /**
+   * @desc add vnode
+   * @param parentElm 
+   * @param before 
+   * @param vnodes 
+   * @param startIdx 
+   * @param endIdx 
+   * @param insertedVnodeQueue 
+   */
   function addVnodes (
     parentElm: Node,
     before: Node | null,
@@ -153,11 +204,17 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
   }
 
+  /**
+   * @desc 调用销毁 vnode hook
+   * @param vnode 
+   */
   function invokeDestroyHook (vnode: VNode) {
     const data = vnode.data
     if (data !== undefined) {
-      data?.hook?.destroy?.(vnode)
-      for (let i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode)
+      data?.hook?.destroy?.(vnode) // 用户定义的 hook
+      for (let i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode) // 内置模块的 hook 
+
+      // 递归调用子组件的销毁hooks
       if (vnode.children !== undefined) {
         for (let j = 0; j < vnode.children.length; ++j) {
           const child = vnode.children[j]
@@ -169,6 +226,13 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
   }
 
+  /**
+   * @desc 移除节点
+   * @param parentElm 
+   * @param vnodes 为什么是数组？
+   * @param startIdx 
+   * @param endIdx 
+   */
   function removeVnodes (parentElm: Node,
     vnodes: VNode[],
     startIdx: number,
@@ -179,23 +243,31 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
       const ch = vnodes[startIdx]
       if (ch != null) {
         if (isDef(ch.sel)) {
-          invokeDestroyHook(ch)
+          invokeDestroyHook(ch) // 调用销毁 hooks
           listeners = cbs.remove.length + 1
           rm = createRmCb(ch.elm!, listeners)
-          for (let i = 0; i < cbs.remove.length; ++i) cbs.remove[i](ch, rm)
-          const removeHook = ch?.data?.hook?.remove
+          for (let i = 0; i < cbs.remove.length; ++i) cbs.remove[i](ch, rm) // 调用内置移除 hook
+          const removeHook = ch?.data?.hook?.remove // 调用用户移除 hook
           if (isDef(removeHook)) {
             removeHook(ch, rm)
           } else {
             rm()
           }
-        } else { // Text node
+        } else {
+          // Text node
           api.removeChild(parentElm, ch.elm!)
         }
       }
     }
   }
 
+  /**
+   * @desc 更新 children
+   * @param parentElm 
+   * @param oldCh 
+   * @param newCh 
+   * @param insertedVnodeQueue 
+   */
   function updateChildren (parentElm: Node,
     oldCh: VNode[],
     newCh: VNode[],
@@ -212,7 +284,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     let idxInOld: number
     let elmToMove: VNode
     let before: any
-
+    // 遍历 oldCh 和 newCh 来比较和更新
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (oldStartVnode == null) {
         oldStartVnode = oldCh[++oldStartIdx] // Vnode might have been moved left
@@ -270,64 +342,87 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
   }
 
+  /**
+   * @desc 对比虚拟DOM并更新 vnode
+   * @param oldVnode 
+   * @param vnode 
+   * @param insertedVnodeQueue 
+   */
   function patchVnode (oldVnode: VNode, vnode: VNode, insertedVnodeQueue: VNodeQueue) {
+    // 执行 prepatch hook
     const hook = vnode.data?.hook
     hook?.prepatch?.(oldVnode, vnode)
+
     const elm = vnode.elm = oldVnode.elm!
     const oldCh = oldVnode.children as VNode[]
     const ch = vnode.children as VNode[]
-    if (oldVnode === vnode) return
+    if (oldVnode === vnode) return // 相同 vnode 不 patch
+
+    // TODO: 执行 update hook
     if (vnode.data !== undefined) {
       for (let i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
       vnode.data.hook?.update?.(oldVnode, vnode)
     }
     if (isUndef(vnode.text)) {
       if (isDef(oldCh) && isDef(ch)) {
+        // children 不同的情况更新 children
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue)
       } else if (isDef(ch)) {
+        // text -> children
         if (isDef(oldVnode.text)) api.setTextContent(elm, '')
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
+        // children -> text
         removeVnodes(elm, oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
+        // text => empty
         api.setTextContent(elm, '')
       }
     } else if (oldVnode.text !== vnode.text) {
       if (isDef(oldCh)) {
+        // children -> text
         removeVnodes(elm, oldCh, 0, oldCh.length - 1)
       }
+      // text -> text
       api.setTextContent(elm, vnode.text!)
     }
     hook?.postpatch?.(oldVnode, vnode)
   }
 
+  /**
+   * @desc 对比新老 vnode，并应用更新。
+   */
   return function patch (oldVnode: VNode | Element, vnode: VNode): VNode {
     let i: number, elm: Node, parent: Node
     const insertedVnodeQueue: VNodeQueue = []
-    for (i = 0; i < cbs.pre.length; ++i) cbs.pre[i]()
+    for (i = 0; i < cbs.pre.length; ++i) cbs.pre[i]() // 调用 module pre hook
 
+    // 一般来说进行首次 patch，oldVNode 为 Element，会将 Element 转化成 vnode来表示
     if (!isVnode(oldVnode)) {
       oldVnode = emptyNodeAt(oldVnode)
     }
-
+    // 相同节点(key，sel相同)继续 patch
     if (sameVnode(oldVnode, vnode)) {
       patchVnode(oldVnode, vnode, insertedVnodeQueue)
     } else {
+      // 不同直接替换渲染
       elm = oldVnode.elm!
-      parent = api.parentNode(elm) as Node
+      parent = api.parentNode(elm) as Node // 一般会找到 body
 
-      createElm(vnode, insertedVnodeQueue)
+      createElm(vnode, insertedVnodeQueue) // 生成 DOM 到 vnode.elm
 
       if (parent !== null) {
-        api.insertBefore(parent, vnode.elm!, api.nextSibling(elm))
-        removeVnodes(parent, [oldVnode], 0, 0)
+        api.insertBefore(parent, vnode.elm!, api.nextSibling(elm)) // 将新的DOM插入旧的DOM之前
+        removeVnodes(parent, [oldVnode], 0, 0) // 移除老的节点
       }
     }
 
+    // 执行 insert hook
     for (i = 0; i < insertedVnodeQueue.length; ++i) {
       insertedVnodeQueue[i].data!.hook!.insert!(insertedVnodeQueue[i])
     }
-    for (i = 0; i < cbs.post.length; ++i) cbs.post[i]()
+
+    for (i = 0; i < cbs.post.length; ++i) cbs.post[i]() // 渲染挂载完成 hooks
     return vnode
   }
 }

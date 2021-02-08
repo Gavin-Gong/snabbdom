@@ -49,7 +49,7 @@ function prepatch (oldVnode: VNode, thunk: VNode): void {
   copyToThunk(oldVnode, thunk)
 }
 
-export const thunk = function thunk (sel: string, key?: any, fn?: any, args?: any): VNode {
+export const thunk = function thunk (sel, key?: any, fn?: any, args?: any): VNode {
   if (args === undefined) {
     args = fn
     fn = key
@@ -62,3 +62,4 @@ export const thunk = function thunk (sel: string, key?: any, fn?: any, args?: an
     args: args
   })
 } as ThunkFn
+

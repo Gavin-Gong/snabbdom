@@ -18,7 +18,10 @@ function addNS (data: any, children: VNodes | undefined, sel: string | undefined
   }
 }
 
-export function h (sel: string): VNode
+/**
+ * @desc 函数重载，h 函数接受灵活多变的参数，将其规整好，再调用 vnode，将函数参数转化为普通对象返回
+ */
+export function h (sel: string): VNode // 字符串
 export function h (sel: string, data: VNodeData | null): VNode
 export function h (sel: string, children: VNodeChildren): VNode
 export function h (sel: string, data: VNodeData | null, children: VNodeChildren): VNode
