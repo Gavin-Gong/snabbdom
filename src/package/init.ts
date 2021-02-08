@@ -18,8 +18,8 @@ const emptyNode = vnode('', {}, [], undefined, undefined)
 
 /**
  * @desc 根据 key，sel（tagName, class, id） 来判断是否为同一个 vnode
- * @param vnode1 
- * @param vnode2 
+ * @param vnode1
+ * @param vnode2
  */
 function sameVnode (vnode1: VNode, vnode2: VNode): boolean {
   return vnode1.key === vnode2.key && vnode1.sel === vnode2.sel
@@ -27,7 +27,7 @@ function sameVnode (vnode1: VNode, vnode2: VNode): boolean {
 
 /**
  * is vnode
- * @param vnode 
+ * @param vnode
  */
 function isVnode (vnode: any): vnode is VNode {
   return vnode.sel !== undefined
@@ -87,7 +87,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 根据真实 DOM 节点生成 children 为空的 vnode
-   * @param elm 
+   * @param elm
    */
   function emptyNodeAt (elm: Element) {
     const id = elm.id ? '#' + elm.id : ''
@@ -97,8 +97,8 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc TODO: 没看懂
-   * @param childElm 
-   * @param listeners 
+   * @param childElm
+   * @param listeners
    */
   function createRmCb (childElm: Node, listeners: number) {
     return function rmCb () {
@@ -111,8 +111,8 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 根据 vnode 对象生成 DOM 节点，并且会更新到 vnode.elm
-   * @param vnode 
-   * @param insertedVnodeQueue 
+   * @param vnode
+   * @param insertedVnodeQueue
    */
   function createElm (vnode: VNode, insertedVnodeQueue: VNodeQueue): Node {
     let i: any
@@ -181,12 +181,12 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc add vnode
-   * @param parentElm 
-   * @param before 
-   * @param vnodes 
-   * @param startIdx 
-   * @param endIdx 
-   * @param insertedVnodeQueue 
+   * @param parentElm
+   * @param before
+   * @param vnodes
+   * @param startIdx
+   * @param endIdx
+   * @param insertedVnodeQueue
    */
   function addVnodes (
     parentElm: Node,
@@ -206,13 +206,13 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 调用销毁 vnode hook
-   * @param vnode 
+   * @param vnode
    */
   function invokeDestroyHook (vnode: VNode) {
     const data = vnode.data
     if (data !== undefined) {
       data?.hook?.destroy?.(vnode) // 用户定义的 hook
-      for (let i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode) // 内置模块的 hook 
+      for (let i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode) // 内置模块的 hook
 
       // 递归调用子组件的销毁hooks
       if (vnode.children !== undefined) {
@@ -228,10 +228,10 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 移除节点
-   * @param parentElm 
+   * @param parentElm
    * @param vnodes 为什么是数组？
-   * @param startIdx 
-   * @param endIdx 
+   * @param startIdx
+   * @param endIdx
    */
   function removeVnodes (parentElm: Node,
     vnodes: VNode[],
@@ -263,10 +263,10 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 更新 children
-   * @param parentElm 
-   * @param oldCh 
-   * @param newCh 
-   * @param insertedVnodeQueue 
+   * @param parentElm
+   * @param oldCh
+   * @param newCh
+   * @param insertedVnodeQueue
    */
   function updateChildren (parentElm: Node,
     oldCh: VNode[],
@@ -344,9 +344,9 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
 
   /**
    * @desc 对比虚拟DOM并更新 vnode
-   * @param oldVnode 
-   * @param vnode 
-   * @param insertedVnodeQueue 
+   * @param oldVnode
+   * @param vnode
+   * @param insertedVnodeQueue
    */
   function patchVnode (oldVnode: VNode, vnode: VNode, insertedVnodeQueue: VNodeQueue) {
     // 执行 prepatch hook
