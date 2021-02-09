@@ -148,6 +148,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
       // set class & id to DOM
       if (hash < dot) elm.setAttribute('id', sel.slice(hash + 1, dot))
       if (dotIdx > 0) elm.setAttribute('class', sel.slice(dot + 1).replace(/\./g, ' '))
+
       // run create hooks
       for (i = 0; i < cbs.create.length; ++i) cbs.create[i](emptyNode, vnode)
 
@@ -157,12 +158,13 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         // create child & append to elm
         for (i = 0; i < children.length; ++i) {
           const ch = children[i]
+          // 递归调用渲染 child
           if (ch != null) {
             api.appendChild(elm, createElm(ch as VNode, insertedVnodeQueue))
           }
         }
       } else if (is.primitive(vnode.text)) {
-        // when children is string
+        // 只渲染数字和字符串
         api.appendChild(elm, api.createTextNode(vnode.text))
       }
       const hook = vnode.data!.hook
@@ -180,9 +182,9 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
   }
 
   /**
-   * @desc add vnode
+   * @desc 批量创建 DOM 到父节点
    * @param parentElm
-   * @param before
+   * @param before before 为 null时，默认会插入到最后一个
    * @param vnodes
    * @param startIdx
    * @param endIdx
@@ -227,7 +229,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
   }
 
   /**
-   * @desc 移除节点
+   * @desc 移除 DOM 节点
    * @param parentElm
    * @param vnodes 为什么是数组？
    * @param startIdx
@@ -255,6 +257,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
           }
         } else {
           // Text node
+          // TODO:
           api.removeChild(parentElm, ch.elm!)
         }
       }
@@ -262,7 +265,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
   }
 
   /**
-   * @desc 更新 children
+   * @desc 虚拟 DOM 算法最核心的部分更新 children，vue2 和 snabbdom 都采用双端比较的算法
    * @param parentElm
    * @param oldCh
    * @param newCh
@@ -365,17 +368,17 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
     if (isUndef(vnode.text)) {
       if (isDef(oldCh) && isDef(ch)) {
-        // children 不同的情况更新 children
+        // children -> children 不同的情况更新 children
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue)
       } else if (isDef(ch)) {
-        // text -> children
+        // text/empty -> children
         if (isDef(oldVnode.text)) api.setTextContent(elm, '')
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
-        // children -> text
+        // children -> empty
         removeVnodes(elm, oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
-        // text => empty
+        // text -> empty
         api.setTextContent(elm, '')
       }
     } else if (oldVnode.text !== vnode.text) {
@@ -383,12 +386,12 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         // children -> text
         removeVnodes(elm, oldCh, 0, oldCh.length - 1)
       }
-      // text -> text
+      // text/empty -> text
       api.setTextContent(elm, vnode.text!)
     }
     hook?.postpatch?.(oldVnode, vnode)
   }
-
+  // 9 - empty -> empty
   /**
    * @desc 对比新老 vnode，并应用更新。
    */
