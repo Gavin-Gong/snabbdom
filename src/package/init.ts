@@ -231,7 +231,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
   /**
    * @desc 移除 DOM 节点
    * @param parentElm
-   * @param vnodes 为什么是数组？
+   * @param vnodes 可能删除多个
    * @param startIdx
    * @param endIdx
    */
@@ -298,29 +298,39 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
       } else if (newEndVnode == null) {
         newEndVnode = newCh[--newEndIdx]
       } else if (sameVnode(oldStartVnode, newStartVnode)) {
+        // 不动，patch 即可
         patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue)
         oldStartVnode = oldCh[++oldStartIdx]
         newStartVnode = newCh[++newStartIdx]
       } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        // 不动，patch 即可
         patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue)
         oldEndVnode = oldCh[--oldEndIdx]
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
+      } else if (sameVnode(oldStartVnode, newEndVnode)) { 
+        // Vnode moved right
+        // a x x
+        // x x a
         patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue)
         api.insertBefore(parentElm, oldStartVnode.elm!, api.nextSibling(oldEndVnode.elm!))
         oldStartVnode = oldCh[++oldStartIdx]
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
+      } else if (sameVnode(oldEndVnode, newStartVnode)) { 
+        // Vnode moved left
+        // x x a
+        // a x x
         patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue)
         api.insertBefore(parentElm, oldEndVnode.elm!, oldStartVnode.elm!)
         oldEndVnode = oldCh[--oldEndIdx]
         newStartVnode = newCh[++newStartIdx]
       } else {
+        // 处理新增和删除的情况
         if (oldKeyToIdx === undefined) {
           oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
         }
         idxInOld = oldKeyToIdx[newStartVnode.key as string]
         if (isUndef(idxInOld)) { // New element
+          // 找不到 index 说明是新增元素，执行插入操作
           api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm!)
         } else {
           elmToMove = oldCh[idxInOld]
@@ -335,11 +345,17 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         newStartVnode = newCh[++newStartIdx]
       }
     }
+
+    // 处理未被覆盖的情况: 临界情况, start 可能会大于 end 的情况
+    // a b c d
+    // d a b c
     if (oldStartIdx <= oldEndIdx || newStartIdx <= newEndIdx) {
       if (oldStartIdx > oldEndIdx) {
+        // 处理新增元素的情况
         before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm
         addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx, insertedVnodeQueue)
       } else {
+        // 处理移除元素的情况
         removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx)
       }
     }

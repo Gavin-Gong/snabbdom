@@ -62,4 +62,3 @@ export const thunk = function thunk (sel, key?: any, fn?: any, args?: any): VNod
     args: args
   })
 } as ThunkFn
-
