@@ -307,7 +307,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue)
         oldEndVnode = oldCh[--oldEndIdx]
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldStartVnode, newEndVnode)) { 
+      } else if (sameVnode(oldStartVnode, newEndVnode)) {
         // Vnode moved right
         // a x x
         // x x a
@@ -315,7 +315,7 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         api.insertBefore(parentElm, oldStartVnode.elm!, api.nextSibling(oldEndVnode.elm!))
         oldStartVnode = oldCh[++oldStartIdx]
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldEndVnode, newStartVnode)) { 
+      } else if (sameVnode(oldEndVnode, newStartVnode)) {
         // Vnode moved left
         // x x a
         // a x x
