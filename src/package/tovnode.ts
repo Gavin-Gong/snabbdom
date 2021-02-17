@@ -1,6 +1,11 @@
 import { vnode, VNode } from './vnode'
 import { htmlDomApi, DOMAPI } from './htmldomapi'
 
+/**
+ * @desc 将真实 DOM 转化为 vnode
+ * @param node
+ * @param domApi
+ */
 export function toVNode (node: Node, domApi?: DOMAPI): VNode {
   const api: DOMAPI = domApi !== undefined ? domApi : htmlDomApi
   let text: string
@@ -15,12 +20,15 @@ export function toVNode (node: Node, domApi?: DOMAPI): VNode {
     let i: number, n: number
     const elmAttrs = node.attributes
     const elmChildren = node.childNodes
+
+    // 提取属性到 data
     for (i = 0, n = elmAttrs.length; i < n; i++) {
       name = elmAttrs[i].nodeName
       if (name !== 'id' && name !== 'class') {
         attrs[name] = elmAttrs[i].nodeValue
       }
     }
+    // 递归处理子元素
     for (i = 0, n = elmChildren.length; i < n; i++) {
       children.push(toVNode(elmChildren[i], domApi))
     }
