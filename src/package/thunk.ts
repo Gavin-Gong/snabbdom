@@ -62,7 +62,7 @@ function prepatch (oldVnode: VNode, thunk: VNode): void {
   copyToThunk(oldVnode, thunk) // 将旧数据塞到新的 vnode中会使得 patch 的时候不会更新
 }
 
-export const thunk = function thunk (sel, key?: any, fn?: any, args?: any): VNode {
+export const thunk = function thunk (sel: any, key?: any, fn?: any, args?: any): VNode {
   // key 允许为空， 为空时重新设置参数
   if (args === undefined) {
     args = fn

@@ -312,7 +312,9 @@ export function init (modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         // a x x
         // x x a
         patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue)
-        api.insertBefore(parentElm, oldStartVnode.elm!, api.nextSibling(oldEndVnode.elm!))
+        const nextNode = api.nextSibling(oldEndVnode.elm!)
+        console.log(nextNode, oldEndVnode)
+        api.insertBefore(parentElm, oldStartVnode.elm!, nextNode)
         oldStartVnode = oldCh[++oldStartIdx]
         newEndVnode = newCh[--newEndIdx]
       } else if (sameVnode(oldEndVnode, newStartVnode)) {
